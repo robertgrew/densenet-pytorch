@@ -12,6 +12,8 @@ import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
+from tqdm import tqdm
+
 import densenet as dn
 
 # used for logging to TensorBoard
@@ -153,8 +155,9 @@ def train(train_loader, model, criterion, optimizer, epoch):
     model.train()
 
     end = time.time()
-    for i, (input, target) in enumerate(train_loader):
-        target = target.cuda(async=True)
+    progress_bar = tqdm(train_loader, total=len(train_loader))
+    for i, (input, target) in enumerate(progress_bar):
+        target = target.cuda()
         input = input.cuda()
         input_var = torch.autograd.Variable(input)
         target_var = torch.autograd.Variable(target)
@@ -199,29 +202,30 @@ def validate(val_loader, model, criterion, epoch):
     model.eval()
 
     end = time.time()
-    for i, (input, target) in enumerate(val_loader):
-        target = target.cuda(async=True)
-        input = input.cuda()
-        input_var = torch.autograd.Variable(input, volatile=True)
-        target_var = torch.autograd.Variable(target, volatile=True)
+    with torch.no_grad():
+        progress_bar = tqdm(val_loader, total=len(val_loader))
+        for i, (input, target) in enumerate(progress_bar):
+            target = target.cuda()
+            input = input.cuda()
+            input_var = torch.autograd.Variable(input)
+            target_var = torch.autograd.Variable(target)
 
-        # compute output
-        output = model(input_var)
-        loss = criterion(output, target_var)
+            # compute output
+            output = model(input_var)
+            loss = criterion(output, target_var)
 
-        # measure accuracy and record loss
-        prec1 = accuracy(output.data, target, topk=(1,))[0]
-        losses.update(loss.data[0], input.size(0))
-        top1.update(prec1[0], input.size(0))
+            # measure accuracy and record loss
+            prec1 = accuracy(output.data, target, topk=(1,))[0]
+            losses.update(loss.item(), input.size(0))
+            top1.update(prec1.item(), input.size(0))
 
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
 
-        if i % args.print_freq == 0:
-            print('Test: [{0}/{1}]\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+            msg = 'Test: [{0}/{1}]'\
+                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})'\
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})'\
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
                       i, len(val_loader), batch_time=batch_time, loss=losses,
                       top1=top1))
