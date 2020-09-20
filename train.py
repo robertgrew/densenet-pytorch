@@ -145,7 +145,7 @@ def main():
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
             'best_prec1': best_prec1,
-        }, is_best)
+        }, is_best, filename=f'{args.name}_{epoch}.pth')
     print('Best accuracy: ', best_prec1)
 
 def train(train_loader, model, criterion, optimizer, epoch):
@@ -231,17 +231,20 @@ def validate(val_loader, model, criterion, epoch):
                   'Loss {loss.val:.4f} ({loss.avg:.4f})'\
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
                       i, len(val_loader), batch_time=batch_time, loss=losses,
-                      top1=top1))
-
-    print(' * Prec@1 {top1.avg:.3f}'.format(top1=top1))
-    # log to TensorBoard
-    if args.tensorboard:
-        log_value('val_loss', losses.avg, epoch)
-        log_value('val_acc', top1.avg, epoch)
-    return top1.avg
+                      top1=top1)
+            progress_bar.set_description(msg)
+            progress_bar.update()
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+        print(' * Prec@1 {top1.avg:.3f}'.format(top1=top1))
+        # log to TensorBoard
+        if args.tensorboard:
+            log_value('val_loss', losses.avg, epoch)
+            log_value('val_acc', top1.avg, epoch)
+        return top1.avg
+
+
+def save_checkpoint(state, is_best, filename='checkpoint.pth'):
     """Saves checkpoint to disk"""
     directory = "runs/%s/"%(args.name)
     if not os.path.exists(directory):
@@ -249,7 +252,7 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     filename = directory + filename
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'runs/%s/'%(args.name) + 'model_best.pth.tar')
+        shutil.copyfile(filename, 'runs/%s/'%(args.name) + 'model_best.pth')
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
