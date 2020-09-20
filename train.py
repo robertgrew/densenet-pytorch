@@ -171,8 +171,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
         # measure accuracy and record loss
         prec1 = accuracy(output.data, target, topk=(1,))[0]
-        losses.update(loss.data[0], input.size(0))
-        top1.update(prec1[0], input.size(0))
+        losses.update(loss.item(), input.size(0))
+        top1.update(prec1.item(), input.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -183,13 +183,15 @@ def train(train_loader, model, criterion, optimizer, epoch):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if i % args.print_freq == 0:
-            print('Epoch: [{0}][{1}/{2}]\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+        msg= 'Epoch: [{0}][{1}/{2}]'\
+              'Time {batch_time.val:.3f} ({batch_time.avg:.3f})'\
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})'\
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
                       epoch, i, len(train_loader), batch_time=batch_time,
-                      loss=losses, top1=top1))
+                      loss=losses, top1=top1)
+        progress_bar.set_description(msg)
+        progress_bar.update()
+
     # log to TensorBoard
     if args.tensorboard:
         log_value('train_loss', losses.avg, epoch)
