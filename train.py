@@ -53,6 +53,7 @@ parser.add_argument('--tensorboard',
                     help='Log progress to TensorBoard', action='store_true')
 parser.set_defaults(bottleneck=True)
 parser.set_defaults(augment=True)
+parser.set_defaults(tensorboard=True)
 
 best_prec1 = 0
 
@@ -60,6 +61,8 @@ def main():
     global args, best_prec1
     args = parser.parse_args()
     if args.tensorboard: configure("runs/%s"%(args.name))
+
+    print(args)
     
     # Data loading code
     normalize = transforms.Normalize(mean=[x/255.0 for x in [125.3, 123.0, 113.9]],
